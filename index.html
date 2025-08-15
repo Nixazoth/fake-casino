@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcadia — Fake Casino (v3)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">🜲</div>
+        <div class="title">Arcadia</div>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-view="dashboard">📈 Tableau</button>
+        <div class="divider"></div>
+        <button class="nav-btn" data-view="coinflip">🪙 Coin Flip</button>
+        <button class="nav-btn" data-view="dice">🎲 Dice</button>
+        <button class="nav-btn" data-view="mines">💣 Mines</button>
+        <button class="nav-btn" data-view="crash">🚀 Crash</button>
+        <button class="nav-btn" data-view="roulette">🎯 Roulette</button>
+        <button class="nav-btn" data-view="plinko">🟢 Plinko</button>
+        <button class="nav-btn" data-view="slots">🎰 Slots</button>
+        <button class="nav-btn" data-view="blackjack">🂡 Blackjack</button>
+      </nav>
+      <footer class="sidebar-foot">
+        <div class="edge">House Edge: <span id="houseEdgeLabel">1.0%</span></div>
+        <input id="houseEdge" type="range" min="0" max="5" value="1" step="0.1" />
+        <div class="disclaimer">
+          <strong>100% FAUSSE MONNAIE</strong><br>Éducatif uniquement. Aucune monnaie réelle.
+        </div>
+      </footer>
+    </aside>
+
+    <main class="main">
+      <header class="topbar sticky">
+        <div class="stake-balance">
+          <div class="currency">A$</div>
+          <div class="amount" id="balance">0</div>
+        </div>
+        <div class="top-metrics">
+          <div class="metric"><span>Total misé</span><strong id="mTotalWagered">0</strong></div>
+          <div class="metric"><span>Total gagné</span><strong id="mTotalWon">0</strong></div>
+          <div class="metric"><span>Profit net</span><strong id="mNet">0</strong></div>
+        </div>
+        <div class="actions">
+          <button id="resetSession" class="ghost">🔁 Nouvelle session</button>
+          <button id="exportHistory" class="ghost">⏬ Export .json</button>
+        </div>
+      </header>
+
+      <section class="dashboard view active" id="view-dashboard">
+        <div class="cards">
+          <div class="card wide resizable">
+            <h3>Évolution du solde</h3>
+            <canvas id="pnlChart"></canvas>
+          </div>
+          <div class="card">
+            <h3>Historique</h3>
+            <div class="history" id="history"></div>
+          </div>
+          <div class="card">
+            <h3>Mise & réglages</h3>
+            <label>Mise</label>
+            <div class="bet-row">
+              <input id="betAmount" type="number" min="0" value="10" />
+              <div class="chip-row">
+                <button class="chip" data-chip="1">+1</button>
+                <button class="chip" data-chip="5">+5</button>
+                <button class="chip" data-chip="10">+10</button>
+                <button class="chip" data-chip="50">+50</button>
+                <button class="chip" data-chip="100">+100</button>
+                <button class="chip ghost" data-chip="clear">Clear</button>
+                <button class="chip ghost" data-chip="half">½</button>
+                <button class="chip ghost" data-chip="double">x2</button>
+                <button class="chip ghost" data-chip="all">All-in</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Coin Flip -->
+      <section class="view" id="view-coinflip">
+        <div class="game-head"><h2>Coin Flip</h2><div class="sub">Face / Pile — payouts ajustés par edge</div></div>
+        <div class="game-card">
+          <div class="game-controls">
+            <div class="segmented" id="cfChoice">
+              <button data-side="heads" class="active">Face</button>
+              <button data-side="tails">Pile</button>
+            </div>
+            <button id="cfPlay" class="primary">Jouer</button>
+          </div>
+          <div class="game-visual">
+            <div class="coin3d" id="coin3d">
+              <div class="face front">Face</div><div class="face back">Pile</div>
+            </div>
+            <div class="result" id="cfResult">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dice -->
+      <section class="view" id="view-dice">
+        <div class="game-head"><h2>Dice (Roll Under)</h2><div class="sub">Jauge + aiguille animée</div></div>
+        <div class="game-card">
+          <div class="game-controls">
+            <label>Seuil &lt;<span id="diceTargetLabel">50</span></label>
+            <input id="diceTarget" type="range" min="2" max="98" value="50" />
+            <div class="statline">
+              <span>Multiplicateur: <strong id="diceMult">1.98x</strong></span>
+              <span>Chance: <strong id="diceChance">50%</strong></span>
+            </div>
+            <button id="dicePlay" class="primary">Lancer</button>
+          </div>
+          <div class="game-visual">
+            <canvas id="diceGauge" width="520" height="260"></canvas>
+            <div class="result" id="diceResult">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mines -->
+      <section class="view" id="view-mines">
+        <div class="game-head"><h2>Mines</h2><div class="sub">5×5, animations de révélation</div></div>
+        <div class="game-card mines">
+          <div class="game-controls">
+            <label>Bombes: <span id="minesCountLabel">3</span></label>
+            <input id="minesCount" type="range" min="1" max="10" value="3" />
+            <button id="minesStart" class="primary">Démarrer</button>
+            <button id="minesCashout" class="ghost" disabled>Cashout</button>
+            <div class="statline">
+              <span>Gain actuel: <strong id="minesPayout">0 A$</strong></span>
+            </div>
+          </div>
+          <div class="board" id="minesBoard"></div>
+          <div class="result" id="minesResult">—</div>
+        </div>
+      </section>
+
+      <!-- Crash -->
+      <section class="view" id="view-crash">
+        <div class="game-head"><h2>Crash</h2><div class="sub">Courbe lisse + cashout</div></div>
+        <div class="game-card crash">
+          <div class="game-controls">
+            <button id="crashStart" class="primary">Démarrer</button>
+            <button id="crashCashout" class="ghost" disabled>Cashout</button>
+            <div class="statline">
+              <span>Multiplicateur: <strong id="crashMult">1.00x</strong></span>
+              <span>État: <strong id="crashState">En attente</strong></span>
+            </div>
+          </div>
+          <canvas id="crashChart" width="700" height="220"></canvas>
+          <div class="result" id="crashResult">—</div>
+        </div>
+      </section>
+
+      <!-- Roulette -->
+      <section class="view" id="view-roulette">
+        <div class="game-head"><h2>Roulette (européenne)</h2><div class="sub">Véritable roue animée + balle</div></div>
+        <div class="game-card">
+          <div class="game-controls">
+            <label>Type de pari</label>
+            <select id="rouType">
+              <option value="red">Rouge (x2)</option>
+              <option value="black">Noir (x2)</option>
+              <option value="even">Pair (x2)</option>
+              <option value="odd">Impair (x2)</option>
+              <option value="number">Numéro précis (x35)</option>
+            </select>
+            <label>Numéro (0-36)</label>
+            <input id="rouNumber" type="number" min="0" max="36" value="7"/>
+            <button id="rouPlay" class="primary">Spin</button>
+          </div>
+          <div class="game-visual">
+            <canvas id="rouCanvas" width="520" height="520"></canvas>
+            <div class="result" id="rouResult">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Plinko -->
+      <section class="view" id="view-plinko">
+        <div class="game-head"><h2>Plinko</h2><div class="sub">Plateau animé style Stake</div></div>
+        <div class="game-card">
+          <div class="game-controls">
+            <label>Rangées</label>
+            <input id="plRows" type="range" min="8" max="16" value="12"/>
+            <label>Risque</label>
+            <select id="plRisk">
+              <option value="low">Faible</option>
+              <option value="med" selected>Moyen</option>
+              <option value="high">Élevé</option>
+            </select>
+            <button id="plPlay" class="primary">Lâcher</button>
+            <div class="statline">
+              <span>Multiplicateur: <strong id="plMult">—</strong></span>
+              <span>Case: <strong id="plSlot">—</strong></span>
+            </div>
+          </div>
+          <div class="game-visual">
+            <canvas id="plCanvas" width="600" height="420"></canvas>
+            <div class="result" id="plResult">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slots -->
+      <section class="view" id="view-slots">
+        <div class="game-head"><h2>Slots (3×3)</h2><div class="sub">Rouleaux animés</div></div>
+        <div class="game-card">
+          <div class="game-controls">
+            <button id="slotsSpin" class="primary">Spin</button>
+            <div class="statline"><span>Gain: <strong id="slotsWin">0 A$</strong></span></div>
+          </div>
+          <div class="reels" id="reels">
+            <div class="reel"><div class="strip"></div></div>
+            <div class="reel"><div class="strip"></div></div>
+            <div class="reel"><div class="strip"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Blackjack -->
+      <section class="view" id="view-blackjack">
+        <div class="game-head"><h2>Blackjack</h2><div class="sub">Cartes SVG + flip</div></div>
+        <div class="game-card">
+          <div class="game-controls">
+            <button id="bjDeal" class="primary">Distribuer</button>
+            <button id="bjHit" class="ghost" disabled>Tirer</button>
+            <button id="bjStand" class="ghost" disabled>Rester</button>
+            <button id="bjDouble" class="ghost" disabled>Double</button>
+            <div class="statline">
+              <span>Joueur: <strong id="bjPlayerVal">0</strong></span>
+              <span>Croupier: <strong id="bjDealerVal">0</strong></span>
+            </div>
+          </div>
+          <div class="bj-table">
+            <div class="hand"><h4>Croupier</h4><div id="bjDealer" class="cards"></div></div>
+            <div class="hand"><h4>Joueur</h4><div id="bjPlayer" class="cards"></div></div>
+            <div class="result" id="bjResult">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="floatStats" class="float-stats">
+    <div class="float-head">📊 Stats (glisser)</div>
+    <div class="float-body">
+      <div><span>Mises totales</span><strong id="sTotalWagered">0</strong></div>
+      <div><span>Gains totaux</span><strong id="sTotalWon">0</strong></div>
+      <div><span>Profit net</span><strong id="sNet">0</strong></div>
+      <div><span>Meilleure série</span><strong id="sBestStreak">0</strong></div>
+      <div><span>Parties jouées</span><strong id="sGames">0</strong></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop active" id="startModal">
+    <div class="modal">
+      <h2>Bienvenue dans Arcadia</h2>
+      <p>Définis ta mise de départ (fausse monnaie) :</p>
+      <input id="startBankroll" type="number" min="0" value="1000" />
+      <button id="startPlay" class="primary">Commencer</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
